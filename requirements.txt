@@ -1,0 +1,7 @@
+supabase 
+python-dotenv
+fastapi
+uvicorn
+pandas
+scikit-learn 
+joblib

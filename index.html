@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGINT-7 // RF Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ─── CSS VARIABLES ─────────────────────────────────────── */
+:root {
+  --bg-void:     #020508;
+  --bg-deep:     #060d14;
+  --bg-panel:    #0a1520;
+  --bg-card:     #0e1e2e;
+  --bg-hover:    #132330;
+  --border:      #1a3048;
+  --border-glow: #0f4a6e;
+  --amber:       #f5a623;
+  --amber-dim:   #7a5112;
+  --green:       #00ff9d;
+  --green-dim:   #00442b;
+  --red:         #ff3b5c;
+  --red-dim:     #4a0f1a;
+  --cyan:        #00d4ff;
+  --cyan-dim:    #003a4a;
+  --yellow:      #ffe600;
+  --text-primary:#e8f4ff;
+  --text-dim:    #5a7a99;
+  --text-muted:  #2a4a66;
+  --font-mono:   'Share Tech Mono', monospace;
+  --font-ui:     'Rajdhani', sans-serif;
+  --font-display:'Orbitron', monospace;
+}
+
+/* ─── RESET & BASE ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* scanline overlay */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.12) 2px,
+    rgba(0,0,0,0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
+
+/* ─── LAYOUT ─────────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ─── TOP NAV ────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  flex-shrink: 0;
+}
+.topbar::after {
+  content:'';
+  position:absolute; bottom:0; left:0; right:0;
+  height:1px;
+  background: linear-gradient(90deg, transparent, var(--cyan) 30%, var(--amber) 70%, transparent);
+  opacity:0.4;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-badge {
+  width: 36px; height: 36px;
+  border: 2px solid var(--amber);
+  display: grid;
+  place-items: center;
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: rgba(245,166,35,0.1);
+  animation: badge-pulse 3s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%,100% { box-shadow: 0 0 0px var(--amber); }
+  50% { box-shadow: 0 0 20px var(--amber); }
+}
+.logo-text { font-family: var(--font-display); font-size: 1rem; letter-spacing: 3px; color: var(--amber); }
+.logo-sub { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; }
+.topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 1.5s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.status-text { color: var(--green); letter-spacing: 1px; }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.topbar-right span { letter-spacing: 1px; }
+#live-clock { color: var(--cyan); }
+.sys-badge {
+  padding: 3px 8px;
+  border: 1px solid var(--border-glow);
+  background: rgba(0,212,255,0.05);
+  color: var(--cyan);
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+}
+
+/* ─── NAV TABS ───────────────────────────────────────────── */
+.navtabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.navtab {
+  padding: 10px 20px;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  white-space: nowrap;
+}
+.navtab:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+.navtab.active {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+  background: rgba(245,166,35,0.05);
+}
+.navtab .tab-icon { margin-right: 6px; opacity: 0.7; }
+
+/* ─── MAIN GRID ──────────────────────────────────────────── */
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  grid-template-rows: 1fr;
+}
+
+/* ─── PANELS ─────────────────────────────────────────────── */
+.panel {
+  background: var(--bg-deep);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel:last-child { border-right: none; border-left: 1px solid var(--border); }
+
+.panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+.panel-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+/* ─── CENTER CONTENT AREA ────────────────────────────────── */
+.center-panel {
+  background: var(--bg-void);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── SIGNAL INPUT SECTION ───────────────────────────────── */
+.signal-input-area {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-deep);
+  flex-shrink: 0;
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--amber);
+}
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.field-input {
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.field-input:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,212,255,0.15); }
+.field-input::placeholder { color: var(--text-muted); }
+select.field-input { cursor: pointer; }
+select.field-input option { background: var(--bg-card); }
+
+.input-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px;
+  gap: 10px;
+  align-items: end;
+}
+.btn {
+  padding: 8px 16px;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--amber);
+  color: var(--bg-void);
+}
+.btn-primary:hover { background: #ffbb44; box-shadow: 0 0 20px rgba(245,166,35,0.5); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-secondary {
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+}
+.btn-secondary:hover { background: rgba(0,212,255,0.08); }
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.btn-danger:hover { background: rgba(255,59,92,0.1); }
+.btn-sm { padding: 5px 10px; font-size: 0.65rem; }
+
+/* ─── WAVEFORM VISUALIZER ────────────────────────────────── */
+.waveform-container {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-deep);
+  flex-shrink: 0;
+}
+.waveform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 8px;
+}
+.waveform-canvas {
+  width: 100%;
+  height: 80px;
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  display: block;
+  position: relative;
+}
+canvas { display: block; }
+
+/* ─── PIPELINE FLOW ──────────────────────────────────────── */
+.pipeline-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.pipeline-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.pipeline-stage::before {
+  content:'';
+  position:absolute;
+  left: 16px; top: 36px;
+  width: 1px; bottom: -8px;
+  background: var(--border);
+}
+.pipeline-stage:last-child::before { display: none; }
+
+.stage-node {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  border: 2px solid;
+  font-family: var(--font-mono);
+  transition: all 0.3s;
+}
+.stage-node.idle    { border-color: var(--border); color: var(--text-muted); background: var(--bg-card); }
+.stage-node.active  { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.1); box-shadow: 0 0 12px rgba(0,212,255,0.3); animation: spin-node 0.8s linear infinite; }
+.stage-node.done    { border-color: var(--green); color: var(--green); background: rgba(0,255,157,0.08); }
+.stage-node.warning { border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
+.stage-node.threat  { border-color: var(--red); color: var(--red); background: rgba(255,59,92,0.1); animation: threat-pulse 0.6s ease-in-out infinite; }
+@keyframes spin-node { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes threat-pulse { 0%,100% { box-shadow: 0 0 8px var(--red); } 50% { box-shadow: 0 0 24px var(--red); } }
+
+.stage-content { flex: 1; padding-top: 4px; }
+.stage-name {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+.stage-detail {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.stage-badge {
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  float: right;
+}
+
+/* ─── RESULT CARD ────────────────────────────────────────── */
+.result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.result-card.friendly { border-left: 3px solid var(--green); }
+.result-card.unknown  { border-left: 3px solid var(--amber); }
+.result-card.hostile  { border-left: 3px solid var(--red); animation: hostile-alert 1s ease-in-out infinite; }
+@keyframes hostile-alert { 0%,100% { box-shadow: none; } 50% { box-shadow: inset 0 0 30px rgba(255,59,92,0.08); } }
+
+.result-card::before {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 60px; height: 60px;
+  background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+}
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.result-class {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.result-class.friendly { color: var(--green); }
+.result-class.unknown  { color: var(--amber); }
+.result-class.hostile  { color: var(--red); }
+
+.confidence-bar-wrap {
+  margin-bottom: 10px;
+}
+.confidence-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.confidence-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.confidence-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s cubic-bezier(0.22,1,0.36,1);
+}
+.confidence-fill.friendly { background: linear-gradient(90deg, var(--green-dim), var(--green)); }
+.confidence-fill.unknown  { background: linear-gradient(90deg, var(--amber-dim), var(--amber)); }
+.confidence-fill.hostile  { background: linear-gradient(90deg, var(--red-dim), var(--red)); }
+
+.result-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.meta-item {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+.meta-key { color: var(--text-dim); }
+.meta-val { color: var(--text-primary); margin-left: 4px; }
+
+/* ─── LEFT PANEL ELEMENTS ────────────────────────────────── */
+.signal-list { display: flex; flex-direction: column; gap: 6px; }
+.signal-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.signal-item:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.signal-item.active { border-color: var(--cyan); background: rgba(0,212,255,0.04); }
+.signal-item::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.signal-item.friendly::before { background: var(--green); }
+.signal-item.unknown::before  { background: var(--amber); }
+.signal-item.hostile::before  { background: var(--red); }
+.signal-item.scanning::before { background: var(--cyan); animation: scan-slide 0.5s linear infinite; }
+@keyframes scan-slide { from { opacity:0.3; } to { opacity:1; } }
+
+.signal-freq {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+.signal-type {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+.signal-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.threat-tag {
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.threat-tag.friendly { background: var(--green-dim); color: var(--green); }
+.threat-tag.unknown  { background: var(--amber-dim); color: var(--amber); }
+.threat-tag.hostile  { background: var(--red-dim); color: var(--red); }
+.threat-tag.scanning { background: var(--cyan-dim); color: var(--cyan); }
+
+/* ─── MINI METRICS ───────────────────────────────────────── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align: center;
+}
+.metric-val {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.metric-val.green { color: var(--green); }
+.metric-val.amber { color: var(--amber); }
+.metric-val.red   { color: var(--red); }
+.metric-val.cyan  { color: var(--cyan); }
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ─── AI ASSISTANT ───────────────────────────────────────── */
+.ai-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ai-chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ai-message {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.ai-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.6rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ai-avatar.assistant {
+  background: rgba(245,166,35,0.15);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}
+.ai-avatar.user {
+  background: rgba(0,212,255,0.1);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+}
+.ai-bubble {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  flex: 1;
+  border-radius: 0 4px 4px 4px;
+  position: relative;
+}
+.ai-bubble.assistant { border-left: 2px solid var(--amber); }
+.ai-bubble.user      { border-left: 2px solid var(--cyan); color: var(--text-dim); }
+.ai-bubble .ai-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--amber);
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 4px;
+}
+.ai-bubble.user .ai-tag { color: var(--cyan); }
+
+.ai-typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+.ai-typing-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: typing-bounce 0.8s ease-in-out infinite;
+}
+.ai-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce { 0%,100% { transform: translateY(0); opacity:0.4; } 50% { transform: translateY(-4px); opacity:1; } }
+
+.ai-input-row {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ai-input {
+  flex: 1;
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 8px 10px;
+  outline: none;
+}
+.ai-input:focus { border-color: var(--amber); }
+.ai-input::placeholder { color: var(--text-muted); }
+
+.ai-send {
+  width: 36px; height: 36px;
+  background: var(--amber);
+  color: var(--bg-void);
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.ai-send:hover { background: #ffbb44; }
+
+/* ─── ANOMALY SECTION ────────────────────────────────────── */
+.anomaly-list { display: flex; flex-direction: column; gap: 5px; }
+.anomaly-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.anomaly-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.anomaly-dot.high   { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.anomaly-dot.medium { background: var(--amber); }
+.anomaly-dot.low    { background: var(--text-dim); }
+.anomaly-text {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.anomaly-time {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─── FINGERPRINT ────────────────────────────────────────── */
+.fingerprint-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.fp-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.fp-hash {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  word-break: break-all;
+  line-height: 1.5;
+  background: var(--bg-void);
+  padding: 6px;
+  border: 1px solid var(--border);
+}
+.fp-bars {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 2px;
+  margin-top: 8px;
+}
+.fp-bar {
+  height: 24px;
+  background: var(--border);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+.fp-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  background: linear-gradient(to top, var(--cyan-dim), var(--cyan));
+  transition: height 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ─── AUDIT LOG ──────────────────────────────────────────── */
+.log-list { display: flex; flex-direction: column; gap: 0; }
+.log-entry {
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  border-bottom: 1px solid rgba(26,48,72,0.5);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  transition: background 0.1s;
+}
+.log-entry:hover { background: var(--bg-hover); }
+.log-time { color: var(--text-dim); flex-shrink: 0; }
+.log-level {
+  flex-shrink: 0;
+  padding: 0 5px;
+  font-size: 0.58rem;
+}
+.log-level.INFO  { color: var(--cyan); }
+.log-level.WARN  { color: var(--amber); }
+.log-level.ALERT { color: var(--red); }
+.log-level.OK    { color: var(--green); }
+.log-msg { color: var(--text-primary); line-height: 1.4; }
+
+/* ─── OFFLINE MODE BANNER ────────────────────────────────── */
+.offline-banner {
+  background: rgba(255,230,0,0.08);
+  border: 1px solid var(--yellow);
+  border-left: 3px solid var(--yellow);
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--yellow);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.offline-banner.hidden { display: none; }
+
+/* ─── SPECTRUM DISPLAY ───────────────────────────────────── */
+.spectrum-wrap {
+  padding: 0 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-deep);
+  flex-shrink: 0;
+}
+
+/* ─── THREAT LEVEL INDICATOR ─────────────────────────────── */
+.threat-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.threat-bars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+.threat-bar-seg {
+  width: 8px;
+  border-radius: 1px;
+  transition: all 0.3s;
+}
+.threat-level-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+}
+
+/* ─── ADAPTIVE LEARNING ──────────────────────────────────── */
+.learning-progress {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.lp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.lp-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+.lp-pct   { font-family: var(--font-display); font-size: 0.8rem; color: var(--cyan); }
+.lp-bar   { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.lp-fill  { height: 100%; background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); border-radius: 2px; transition: width 1s ease; }
+
+/* ─── VIEW PANELS ────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* ─── SPECTRUM VIEW ──────────────────────────────────────── */
+.spectrum-view-canvas {
+  width: 100%;
+  height: 220px;
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  display: block;
+}
+
+/* ─── RADAR SWEEP ────────────────────────────────────────── */
+.radar-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* ─── RESPONSIVE SCROLL ──────────────────────────────────── */
+.scroll-area { overflow-y: auto; flex: 1; padding: 12px; }
+
+/* ─── ALERTS FLASH ───────────────────────────────────────── */
+.alert-flash {
+  position: fixed;
+  top: 70px; right: 20px;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-left: 3px solid var(--red);
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--red);
+  letter-spacing: 1px;
+  z-index: 1000;
+  animation: flash-in 0.3s ease, flash-out 0.3s ease 3s forwards;
+  max-width: 320px;
+}
+@keyframes flash-in { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+@keyframes flash-out { from { opacity:1; } to { opacity:0; pointer-events:none; } }
+
+/* ─── DIVIDER ────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+  position: relative;
+}
+.divider::before {
+  content: '';
+  position: absolute; top:-1px; left: 0;
+  width: 30%; height: 1px;
+  background: var(--amber);
+  opacity: 0.4;
+}
+
+/* ─── TOOLTIP ────────────────────────────────────────────── */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 5px 8px;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* quick fade-in for result */
+.fade-in {
+  animation: fade-in 0.4s ease forwards;
+}
+@keyframes fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ─── TOPBAR ──────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-badge">⬡</div>
+      <div>
+        <div class="logo-text">SIGINT-7</div>
+        <div class="logo-sub">RF INTELLIGENCE PLATFORM</div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="status-dot"></div>
+      <span class="status-text">SYSTEM NOMINAL</span>
+      <span style="color:var(--border);margin:0 8px">|</span>
+      <span style="color:var(--text-dim)">NODE:</span>
+      <span style="color:var(--cyan)">ALPHA-7</span>
+      <span style="color:var(--border);margin:0 8px">|</span>
+      <span style="color:var(--text-dim)">SIGNALS:</span>
+      <span id="live-count" style="color:var(--amber)">247</span>
+    </div>
+    <div class="topbar-right">
+      <span id="live-clock">--:--:--</span>
+      <div class="sys-badge">CLEARANCE: TS/SCI</div>
+      <button class="btn btn-sm btn-danger" id="offline-toggle" data-tip="Toggle offline mode">OFFLINE MODE</button>
+    </div>
+  </header>
+
+  <!-- ─── NAV TABS ─────────────────────────────────────── -->
+  <nav class="navtabs">
+    <div class="navtab active" onclick="switchView('analyze')" id="tab-analyze"><span class="tab-icon">◈</span>ANALYZE</div>
+    <div class="navtab" onclick="switchView('spectrum')" id="tab-spectrum"><span class="tab-icon">⌇</span>SPECTRUM</div>
+    <div class="navtab" onclick="switchView('fingerprint')" id="tab-fingerprint"><span class="tab-icon">⎍</span>FINGERPRINT</div>
+    <div class="navtab" onclick="switchView('intel')" id="tab-intel"><span class="tab-icon">◉</span>THREAT INTEL</div>
+    <div class="navtab" onclick="switchView('learning')" id="tab-learning"><span class="tab-icon">⟳</span>ADAPTIVE AI</div>
+    <div class="navtab" onclick="switchView('audit')" id="tab-audit"><span class="tab-icon">≡</span>AUDIT LOG</div>
+  </nav>
+
+  <!-- ─── MAIN CONTENT ─────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ════ LEFT SIDEBAR ════ -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Signal Queue</span>
+        <button class="btn btn-sm btn-secondary" onclick="generateSignals()">+ SCAN</button>
+      </div>
+      <div class="panel-body" id="signal-sidebar">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- ════ CENTER CONTENT ════ -->
+    <div class="center-panel">
+
+      <!-- ANALYZE VIEW -->
+      <div class="view active" id="view-analyze">
+
+        <!-- Signal Input -->
+        <div class="signal-input-area">
+          <div class="section-label">Signal Input Parameters</div>
+          <div class="input-grid">
+            <div class="field-group">
+              <label class="field-label">Frequency (MHz)</label>
+              <input class="field-input" type="number" id="inp-freq" placeholder="e.g. 433.92" value="433.92">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Signal Strength (dBm)</label>
+              <input class="field-input" type="number" id="inp-strength" placeholder="-80" value="-72">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Bandwidth (kHz)</label>
+              <input class="field-input" type="number" id="inp-bw" placeholder="200" value="200">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Modulation</label>
+              <select class="field-input" id="inp-mod">
+                <option>FM</option>
+                <option>AM</option>
+                <option>SSB</option>
+                <option>FSK</option>
+                <option>BPSK</option>
+                <option>QPSK</option>
+                <option>OFDM</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-row2">
+            <div class="field-group">
+              <label class="field-label">Signal Pattern (IQ Data / Hex)</label>
+              <input class="field-input" type="text" id="inp-iq" placeholder="0x1A2B3C4D or auto-generate">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Source ID</label>
+              <input class="field-input" type="text" id="inp-source" placeholder="UNK-001">
+            </div>
+            <button class="btn btn-primary" onclick="analyzeSignal()" id="analyze-btn">▶ ANALYZE</button>
+          </div>
+        </div>
+
+        <!-- Waveform Canvas -->
+        <div class="waveform-container">
+          <div class="waveform-header">
+            <span class="section-label" style="margin-bottom:0">Live Waveform</span>
+            <div style="display:flex;gap:8px;">
+              <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)" id="wf-freq-label">433.92 MHz</span>
+              <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--green)" id="wf-status">LIVE</span>
+            </div>
+          </div>
+          <canvas id="waveform-canvas" class="waveform-canvas" height="80"></canvas>
+        </div>
+
+        <!-- Pipeline + Result -->
+        <div class="pipeline-area">
+          <div class="section-label" style="margin-bottom:12px">Processing Pipeline</div>
+          <div id="pipeline-stages">
+            <!-- populated by JS -->
+          </div>
+          <div id="result-area"></div>
+        </div>
+      </div>
+
+      <!-- SPECTRUM VIEW -->
+      <div class="view" id="view-spectrum">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);flex-shrink:0;">
+          <div class="section-label">RF Spectrum Analyzer — 0 to 6 GHz</div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <div class="field-group" style="width:140px">
+              <label class="field-label">Start Freq (MHz)</label>
+              <input class="field-input" id="spec-start" type="number" value="400">
+            </div>
+            <div class="field-group" style="width:140px">
+              <label class="field-label">End Freq (MHz)</label>
+              <input class="field-input" id="spec-end" type="number" value="500">
+            </div>
+            <div style="margin-top:14px;display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="startSweep()">SWEEP</button>
+              <button class="btn btn-sm" style="background:var(--green-dim);color:var(--green);border:1px solid var(--green)" onclick="startCapture()">CAPTURE</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:16px 20px;flex:1;overflow:auto;">
+          <canvas id="spectrum-canvas" width="800" height="220" style="width:100%;height:220px;background:var(--bg-void);border:1px solid var(--border);display:block;"></canvas>
+          <div style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="spectrum-markers">
+            <!-- markers -->
+          </div>
+        </div>
+      </div>
+
+      <!-- FINGERPRINT VIEW -->
+      <div class="view" id="view-fingerprint">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);flex-shrink:0;">
+          <div class="section-label">Signal Fingerprinting Engine</div>
+          <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);margin-top:4px;">
+            Extract unique RF signatures for device identification and tracking
+          </div>
+        </div>
+        <div class="scroll-area" id="fingerprint-view-body">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- THREAT INTEL VIEW -->
+      <div class="view" id="view-intel">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);flex-shrink:0;">
+          <div class="section-label">Threat Intelligence Feed</div>
+        </div>
+        <div class="scroll-area" id="intel-view-body">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- ADAPTIVE LEARNING VIEW -->
+      <div class="view" id="view-learning">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);flex-shrink:0;">
+          <div class="section-label">Adaptive Learning Engine</div>
+        </div>
+        <div class="scroll-area" id="learning-view-body">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- AUDIT LOG VIEW -->
+      <div class="view" id="view-audit">
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
+          <div class="section-label" style="margin-bottom:0">System Audit Trail</div>
+          <button class="btn btn-sm btn-secondary" onclick="exportLog()">EXPORT CSV</button>
+        </div>
+        <div class="scroll-area">
+          <div class="log-list" id="audit-log-list">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════ RIGHT PANEL — AI ASSISTANT ════ -->
+    <div class="panel" style="border-right:none;border-left:1px solid var(--border);">
+      <div class="panel-header">
+        <span class="panel-title">AI SIGINT Assistant</span>
+        <span style="font-family:var(--font-mono);font-size:0.58rem;color:var(--green)">● ONLINE</span>
+      </div>
+
+      <!-- Metrics Strip -->
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border);">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-val green" id="m-friendly">0</div>
+            <div class="metric-label">FRIENDLY</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val red" id="m-hostile">0</div>
+            <div class="metric-label">HOSTILE</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val amber" id="m-unknown">0</div>
+            <div class="metric-label">UNKNOWN</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val cyan" id="m-total">0</div>
+            <div class="metric-label">TOTAL</div>
+          </div>
+        </div>
+
+        <!-- Threat Level -->
+        <div class="threat-indicator" id="threat-indicator">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim);margin-bottom:4px;">THREAT LEVEL</div>
+            <div class="threat-level-label" id="threat-level-text" style="color:var(--green)">LOW</div>
+          </div>
+          <div class="threat-bars" id="threat-bars">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Chat -->
+      <div class="ai-panel">
+        <div class="ai-chat" id="ai-chat">
+          <div class="ai-message">
+            <div class="ai-avatar assistant">AI</div>
+            <div class="ai-bubble assistant">
+              <span class="ai-tag">SIGINT-AI v2.4 // READY</span>
+              Hello, Analyst. I am your AI-assisted SIGINT guide. I can:
+              <br><br>
+              • <b>Explain</b> signal classifications and confidence scores<br>
+              • <b>Guide</b> you through the analysis pipeline<br>
+              • <b>Teach</b> RF modulation types & threat indicators<br>
+              • <b>Alert</b> you on anomalies and fingerprint matches<br>
+              • <b>Answer</b> questions about any detected signal<br>
+              <br>
+              Submit a signal or ask me anything about RF intelligence.
+            </div>
+          </div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="ai-input" placeholder="Ask about RF signals, threats, analysis..." onkeydown="if(event.key==='Enter')sendAiMessage()">
+          <button class="ai-send" onclick="sendAiMessage()">▶</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ─── SCRIPTS ───────────────────────────────────────────── -->
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const BASE_URL = 'http://localhost:8000'; // your FastAPI backend
+let isOffline = false;
+let analysisCount = { friendly:0, hostile:0, unknown:0 };
+let auditLogs = [];
+let signals = [];
+let wfCtx, specCtx;
+let wfAnimId, specAnimId;
+let wfPhase = 0;
+let specData = new Array(200).fill(0).map(() => Math.random() * 40 + 10);
+
+// ═══════════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-clock').textContent =
+    now.toUTCString().split(' ')[4] + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════════════
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.navtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'spectrum') { setTimeout(startSpectrumAnim, 100); }
+  if (name === 'fingerprint') { buildFingerprintView(); }
+  if (name === 'intel') { buildIntelView(); }
+  if (name === 'learning') { buildLearningView(); }
+  if (name === 'audit') { buildAuditLog(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE STAGES
+// ═══════════════════════════════════════════════════════════
+const STAGES = [
+  { id:'input',     icon:'↓', name:'Signal Input',           detail:'Raw RF data ingestion' },
+  { id:'preproc',   icon:'⚙', name:'Preprocessing',          detail:'Noise filtering, normalization' },
+  { id:'features',  icon:'⟁', name:'Feature Extraction',     detail:'FFT, PSD, spectral centroid' },
+  { id:'anomaly',   icon:'⚠', name:'Anomaly Detection',      detail:'Isolation Forest + Z-score' },
+  { id:'ml',        icon:'⬡', name:'ML Classification',      detail:'Ensemble model voting' },
+  { id:'threat',    icon:'◎', name:'Threat Intelligence',    detail:'IOC matching, reputation lookup' },
+  { id:'decision',  icon:'✓', name:'Decision + Confidence',  detail:'Bayesian confidence scoring' },
+  { id:'logging',   icon:'≡', name:'Logging & Audit Trail',  detail:'Immutable event logging' },
+  { id:'response',  icon:'↗', name:'API Response + AI',      detail:'Explanation & recommendations' },
+];
+
+function buildPipeline(states = {}) {
+  const el = document.getElementById('pipeline-stages');
+  el.innerHTML = STAGES.map(s => {
+    const st = states[s.id] || 'idle';
+    return `<div class="pipeline-stage fade-in">
+      <div class="stage-node ${st}">${s.icon}</div>
+      <div class="stage-content">
+        <div class="stage-name">${s.name}</div>
+        <div class="stage-detail" id="stage-detail-${s.id}">${s.detail}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+buildPipeline();
+
+async function animatePipeline(results) {
+  const delays = [0, 200, 400, 600, 900, 1200, 1500, 1700, 1900];
+  for (let i = 0; i < STAGES.length; i++) {
+    await new Promise(r => setTimeout(r, delays[i] || i * 200));
+    const states = {};
+    STAGES.forEach((s, j) => {
+      if (j < i) states[s.id] = getStageStatus(s.id, results, 'done');
+      else if (j === i) states[s.id] = 'active';
+      else states[s.id] = 'idle';
+    });
+    buildPipeline(states);
+    if (STAGES[i].id === 'anomaly' && results.anomaly_detected) {
+      updateStageDetail('anomaly', '⚠ ANOMALY: ' + (results.anomaly_reason || 'Irregular pattern'));
+    }
+    if (STAGES[i].id === 'ml') {
+      updateStageDetail('ml', `Classifying... model consensus building`);
+    }
+  }
+  // Final states
+  const finalStates = {};
+  STAGES.forEach(s => { finalStates[s.id] = getStageStatus(s.id, results, 'done'); });
+  buildPipeline(finalStates);
+}
+
+function getStageStatus(id, results, def) {
+  if (!results) return def;
+  if (id === 'anomaly' && results.anomaly_detected) return 'warning';
+  if (id === 'decision' || id === 'ml') {
+    if (results.classification === 'HOSTILE') return 'threat';
+    if (results.classification === 'UNKNOWN') return 'warning';
+    return 'done';
+  }
+  return def;
+}
+
+function updateStageDetail(id, text) {
+  const el = document.getElementById('stage-detail-' + id);
+  if (el) el.textContent = text;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIGNAL ANALYZE
+// ═══════════════════════════════════════════════════════════
+async function analyzeSignal() {
+  const freq      = parseFloat(document.getElementById('inp-freq').value) || 433.92;
+  const strength  = parseFloat(document.getElementById('inp-strength').value) || -72;
+  const bw        = parseFloat(document.getElementById('inp-bw').value) || 200;
+  const mod       = document.getElementById('inp-mod').value;
+  const iqData    = document.getElementById('inp-iq').value || generateFakeIQ();
+  const sourceId  = document.getElementById('inp-source').value || 'UNK-' + Math.floor(Math.random()*999).toString().padStart(3,'0');
+
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('analyze-btn').textContent = '⟳ ANALYZING';
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('wf-freq-label').textContent = freq + ' MHz';
+
+  addLog('INFO', `Analysis started — ${freq}MHz ${mod} | Source: ${sourceId}`);
+
+  let result;
+  if (isOffline) {
+    // offline simulation
+    result = simulateAnalysis(freq, strength, bw, mod, iqData, sourceId);
+    await animatePipeline(result);
+  } else {
+    // start animation immediately, fetch in parallel
+    const fetchPromise = fetchAnalysis({ 
+      frequency: freq,
+      amplitude: 0.8,              // default (until you add UI)
+      modulation: mod,
+      signal_strength: strength,
+      bandwidth: bw,
+      memory_usage: 40,
+      wifi_strength: -60
+    });
+    const animPromise  = animatePipeline({});
+    try {
+      result = await fetchPromise;
+    } catch(e) {
+      console.error("Backend error:", e);
+      addLog('WARN', 'Backend failed — switching to simulation');
+
+      result = simulateAnalysis(freq, strength, bw, mod, iqData, sourceId);
+    }
+    await animPromise;
+    // re-run final states with real result
+    const finalStates = {};
+    STAGES.forEach(s => { finalStates[s.id] = getStageStatus(s.id, result, 'done'); });
+    buildPipeline(finalStates);
+  }
+
+  renderResult(result);
+  updateMetrics(result);
+  addSignalToSidebar({ freq, strength, mod, result, sourceId });
+  addLog(result.classification === 'HOSTILE' ? 'ALERT' : result.classification === 'UNKNOWN' ? 'WARN' : 'OK',
+    `[${sourceId}] ${freq}MHz → ${result.classification} (${result.confidence}% conf)`);
+
+  if (result.classification === 'HOSTILE') {
+    showAlert('⚠ HOSTILE SIGNAL DETECTED — ' + freq + ' MHz');
+  }
+
+  sendAiAnalysis(result, freq, mod);
+
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('analyze-btn').textContent = '▶ ANALYZE';
+}
+
+
+
+
+
+async function fetchAnalysis(payload) {
+  const res = await fetch(`${BASE_URL}/signal/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+
+  const raw = await res.json();
+  const backend = raw.data;
+
+  return {
+    classification: backend.decision.final_label.toUpperCase(),
+    confidence: Math.round(backend.decision.confidence * 100),
+
+    anomaly_detected: backend.anomaly.is_anomaly,
+    anomaly_reason: `Score: ${backend.anomaly.anomaly_score}`,
+
+    modulation_detected: payload.modulation,
+    signal_strength: payload.signal_strength,
+    frequency: payload.frequency,
+    bandwidth: payload.bandwidth,
+
+    threat_score: backend.decision.threat_score,
+    timestamp: new Date().toISOString(),
+
+    // optional enhancements
+    protocol_hint: "Derived from backend",
+    fingerprint: JSON.stringify(backend.features).slice(0, 32)
+  };
+}
+
+function simulateAnalysis(freq, strength, bw, mod, iq, source) {
+  const seed = freq + strength;
+  const classes = ['FRIENDLY','UNKNOWN','HOSTILE'];
+  const weights = [0.5, 0.3, 0.2];
+  const r = Math.random();
+  const cls = r < 0.5 ? 'FRIENDLY' : r < 0.8 ? 'UNKNOWN' : 'HOSTILE';
+  const conf = Math.round(65 + Math.random() * 30);
+  const anomaly = Math.random() < 0.25;
+  return {
+    classification: cls,
+    confidence: conf,
+    anomaly_detected: anomaly,
+    anomaly_reason: anomaly ? 'Spectral irregularity at ' + (freq + 2.3).toFixed(2) + ' MHz' : null,
+    modulation_detected: mod,
+    signal_strength: strength,
+    frequency: freq,
+    bandwidth: bw,
+    source_id: source,
+    fingerprint: generateFingerprintHash(),
+    threat_score: cls === 'HOSTILE' ? Math.round(70 + Math.random()*25) : cls === 'UNKNOWN' ? Math.round(30 + Math.random()*30) : Math.round(Math.random()*15),
+    protocol_hint: getProtocolHint(freq),
+    ai_explanation: getAiExplanation(cls, freq, mod, conf),
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function getProtocolHint(freq) {
+  if (freq >= 433 && freq <= 434) return 'ISM 433MHz / LoRa';
+  if (freq >= 868 && freq <= 870) return 'LoRaWAN EU868';
+  if (freq >= 2400 && freq <= 2500) return 'WiFi 2.4GHz / BT';
+  if (freq >= 5150 && freq <= 5850) return 'WiFi 5GHz';
+  if (freq >= 88 && freq <= 108) return 'FM Broadcast';
+  if (freq >= 136 && freq <= 174) return 'VHF Military/Tactical';
+  if (freq >= 380 && freq <= 512) return 'UHF Tactical Comms';
+  return 'Unknown Protocol';
+}
+
+function getAiExplanation(cls, freq, mod, conf) {
+  const expl = {
+    FRIENDLY: `Signal at ${freq} MHz classified as FRIENDLY with ${conf}% confidence. ${mod} modulation matches known allied IFF patterns. Spectral fingerprint aligns with registered friendly emitter database. No anomalous burst patterns detected.`,
+    UNKNOWN:  `Signal at ${freq} MHz is UNCLASSIFIED — insufficient data for definitive attribution. ${conf}% confidence. ${mod} modulation noted; recommend continued monitoring. Protocol does not match known allied signatures but lacks hostile indicators.`,
+    HOSTILE:  `⚠ WARNING: Signal at ${freq} MHz exhibits HOSTILE indicators at ${conf}% confidence. ${mod} modulation pattern matches known adversarial communication signatures. Recommend immediate jamming countermeasures and escalation per SOP-7.`,
+  };
+  return expl[cls];
+}
+
+function generateFingerprintHash() {
+  return Array.from({length:32}, () => Math.floor(Math.random()*16).toString(16)).join('');
+}
+function generateFakeIQ() {
+  return '0x' + Array.from({length:8}, () => Math.floor(Math.random()*0xFF).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER RESULT
+// ═══════════════════════════════════════════════════════════
+function renderResult(r) {
+  const cls = (r.classification || "unknown").toLowerCase();
+  const html = `
+    <div class="result-card ${cls} fade-in">
+      <div class="result-header">
+        <span class="result-class ${cls}">${r.classification}</span>
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim)">${r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}</span>
+      </div>
+
+      <div class="confidence-bar-wrap">
+        <div class="confidence-label">
+          <span>CONFIDENCE SCORE</span>
+          <span style="color:${cls==='hostile'?'var(--red)':cls==='friendly'?'var(--green)':'var(--amber)'}">
+            ${r.confidence}%
+          </span>
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-fill ${cls}" style="width:${r.confidence}%"></div>
+        </div>
+      </div>
+
+      ${r.anomaly_detected ? `<div style="background:rgba(255,230,0,0.06);border:1px solid rgba(255,230,0,0.3);padding:7px 10px;font-family:var(--font-mono);font-size:0.65rem;color:var(--yellow);margin-bottom:10px;">
+        ⚠ ANOMALY: ${r.anomaly_reason}
+      </div>` : ''}
+
+      <div class="result-meta">
+        <div class="meta-item"><span class="meta-key">FREQUENCY:</span><span class="meta-val">${r.frequency} MHz</span></div>
+        <div class="meta-item"><span class="meta-key">STRENGTH:</span><span class="meta-val">${r.signal_strength} dBm</span></div>
+        <div class="meta-item"><span class="meta-key">MODULATION:</span><span class="meta-val">${r.modulation_detected}</span></div>
+        <div class="meta-item"><span class="meta-key">BANDWIDTH:</span><span class="meta-val">${r.bandwidth} kHz</span></div>
+        <div class="meta-item"><span class="meta-key">PROTOCOL:</span><span class="meta-val">${r.protocol_hint}</span></div>
+        <div class="meta-item"><span class="meta-key">THREAT SCORE:</span>
+          <span class="meta-val" style="color:${r.threat_score>60?'var(--red)':r.threat_score>30?'var(--amber)':'var(--green)'}">${r.threat_score}/100</span>
+        </div>
+        <div class="meta-item" style="grid-column:1/-1"><span class="meta-key">FINGERPRINT:</span><span class="meta-val" style="font-size:0.6rem;color:var(--text-dim)">${r.fingerprint}</span></div>
+        <div class="meta-item" style="grid-column:1/-1"><span class="meta-key">SOURCE:</span><span class="meta-val">${r.source_id}</span></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('result-area').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR SIGNALS
+// ═══════════════════════════════════════════════════════════
+function addSignalToSidebar({ freq, strength, mod, result, sourceId }) {
+  signals.unshift({ freq, strength, mod, result, sourceId, time: new Date() });
+  if (signals.length > 50) signals.pop();
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const el = document.getElementById('signal-sidebar');
+  el.innerHTML = signals.map((s, i) => {
+    const cls = s.result.classification.toLowerCase();
+    return `<div class="signal-item ${cls} ${i===0?'active':''}" onclick="selectSignal(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="signal-freq">${s.freq} MHz</span>
+        <span class="threat-tag ${cls}">${s.result.classification}</span>
+      </div>
+      <div class="signal-type">${s.mod} | ${s.sourceId}</div>
+      <div class="signal-stat">
+        <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)">${s.strength} dBm</span>
+        <span style="font-family:var(--font-mono);font-size:0.58rem;color:var(--text-muted)">${s.time.toLocaleTimeString()}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectSignal(i) {
+  if (signals[i]) {
+    renderResult(signals[i].result);
+    buildPipeline({ input:'done', preproc:'done', features:'done', anomaly: signals[i].result.anomaly_detected ? 'warning':'done',
+      ml: getStageStatus('ml', signals[i].result, 'done'), threat:'done', decision: getStageStatus('decision', signals[i].result,'done'), logging:'done', response:'done' });
+  }
+}
+
+function generateSignals() {
+  const mods = ['FM','AM','FSK','BPSK','QPSK','OFDM'];
+  const freqs = [433.92, 868.5, 2450, 5800, 145.5, 433.1, 869.85];
+  const f = freqs[Math.floor(Math.random()*freqs.length)];
+  const m = mods[Math.floor(Math.random()*mods.length)];
+  document.getElementById('inp-freq').value = f;
+  document.getElementById('inp-mod').value = m;
+  document.getElementById('inp-strength').value = (-40 - Math.floor(Math.random()*60));
+  analyzeSignal();
+}
+
+// ═══════════════════════════════════════════════════════════
+// METRICS
+// ═══════════════════════════════════════════════════════════
+function updateMetrics(result) {
+  const cls = result.classification.toLowerCase();
+  if (cls === 'friendly') analysisCount.friendly++;
+  if (cls === 'hostile')  analysisCount.hostile++;
+  if (cls === 'unknown')  analysisCount.unknown++;
+  document.getElementById('m-friendly').textContent = analysisCount.friendly;
+  document.getElementById('m-hostile').textContent  = analysisCount.hostile;
+  document.getElementById('m-unknown').textContent  = analysisCount.unknown;
+  document.getElementById('m-total').textContent    = analysisCount.friendly + analysisCount.hostile + analysisCount.unknown;
+  document.getElementById('live-count').textContent = 247 + analysisCount.friendly + analysisCount.hostile + analysisCount.unknown;
+  updateThreatLevel();
+}
+
+function updateThreatLevel() {
+  const total = analysisCount.friendly + analysisCount.hostile + analysisCount.unknown || 1;
+  const ratio = analysisCount.hostile / total;
+  let level, color, bars;
+  if (ratio > 0.4)      { level = 'CRITICAL'; color = 'var(--red)';   bars = 5; }
+  else if (ratio > 0.2) { level = 'HIGH';     color = 'var(--red)';   bars = 4; }
+  else if (ratio > 0.1) { level = 'ELEVATED'; color = 'var(--amber)'; bars = 3; }
+  else if (ratio > 0.0) { level = 'GUARDED';  color = 'var(--yellow)';bars = 2; }
+  else                  { level = 'LOW';       color = 'var(--green)'; bars = 1; }
+
+  document.getElementById('threat-level-text').textContent = level;
+  document.getElementById('threat-level-text').style.color = color;
+
+  const barsEl = document.getElementById('threat-bars');
+  const heights = [8, 12, 16, 20, 24];
+  barsEl.innerHTML = Array.from({length:5}, (_,i) => {
+    const active = i < bars;
+    return `<div class="threat-bar-seg" style="height:${heights[i]}px;background:${active?color:'var(--border)'}"></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI ASSISTANT
+// ═══════════════════════════════════════════════════════════
+function addAiMessage(text, role = 'assistant') {
+  const chat = document.getElementById('ai-chat');
+  const msgEl = document.createElement('div');
+  msgEl.className = 'ai-message fade-in';
+  const tag = role === 'assistant' ? 'SIGINT-AI' : 'ANALYST';
+  msgEl.innerHTML = `
+    <div class="ai-avatar ${role}">${role==='assistant'?'AI':'U'}</div>
+    <div class="ai-bubble ${role}">
+      <span class="ai-tag">${tag}</span>
+      ${text}
+    </div>`;
+  chat.appendChild(msgEl);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  const chat = document.getElementById('ai-chat');
+  const el = document.createElement('div');
+  el.id = 'ai-typing';
+  el.className = 'ai-message';
+  el.innerHTML = `<div class="ai-avatar assistant">AI</div>
+    <div class="ai-bubble assistant"><div class="ai-typing">
+      <div class="ai-typing-dot"></div><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div>
+    </div></div>`;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+function hideTyping() {
+  const el = document.getElementById('ai-typing');
+  if (el) el.remove();
+}
+
+async function sendAiMessage() {
+  const input = document.getElementById('ai-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  addAiMessage(msg, 'user');
+  showTyping();
+
+  try {
+    const res = await fetch(`${BASE_URL}/ai/assist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: msg
+      })
+    });
+
+    const data = await res.json();
+
+    hideTyping();
+    addAiMessage(data.response || "No response");
+
+  } catch(e) {
+    hideTyping();
+    addAiMessage(generateOfflineAiResponse(msg));
+  }
+}
+function sendAiAnalysis(result, freq, mod) {
+  setTimeout(() => {
+    const cls = result.classification;
+    const icon = cls === 'HOSTILE' ? '🔴' : cls === 'UNKNOWN' ? '🟡' : '🟢';
+    addAiMessage(`${icon} <b>${cls}</b> signal detected at <b>${freq} MHz</b> (${mod}). ${result.ai_explanation}`);
+    if (result.anomaly_detected) {
+      setTimeout(() => addAiMessage(`⚠ Anomaly flagged: <b>${result.anomaly_reason}</b>. Recommend cross-referencing with historical baseline for this frequency band. Unusual spectral deviations may indicate spoofing or non-standard emitter.`), 600);
+    }
+  }, 2200);
+}
+
+function generateOfflineAiResponse(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes('hostile') || lower.includes('threat')) return 'Hostile signals exhibit irregular modulation patterns, non-standard IFF responses, or match known adversarial emitter fingerprints. Confidence thresholds above 75% trigger automatic escalation protocols.';
+  if (lower.includes('anomaly')) return 'Anomaly detection uses Isolation Forest and Z-score analysis on spectral features. Deviations >2σ from baseline trigger WARN flags. High-confidence anomalies may indicate signal spoofing or novel emitter types.';
+  if (lower.includes('fingerprint')) return 'Signal fingerprinting extracts RF hardware imperfections — oscillator drift, transient patterns, IQ imbalance — unique to each emitter. These create a unique device signature independent of content.';
+  if (lower.includes('offline') || lower.includes('mode')) return 'Offline mode uses cached threat databases and local ML models. Analysis accuracy may be reduced by ~15% vs. online mode with live threat intelligence feeds.';
+  if (lower.includes('confidence')) return 'Confidence scores are Bayesian posterior probabilities from the ensemble classifier. Scores >85% are high confidence; 60-85% moderate; <60% insufficient — recommend manual review.';
+  return 'Query acknowledged. All SIGINT operations follow NSDD-145 guidelines. For technical queries on specific signal parameters, provide frequency, modulation type, and IQ data for precise analysis.';
+}
+
+// ═══════════════════════════════════════════════════════════
+// WAVEFORM CANVAS
+// ═══════════════════════════════════════════════════════════
+function initWaveform() {
+  const canvas = document.getElementById('waveform-canvas');
+  if (!canvas) return;
+  canvas.width = canvas.offsetWidth;
+  wfCtx = canvas.getContext('2d');
+  animateWaveform();
+}
+
+function animateWaveform() {
+  const canvas = document.getElementById('waveform-canvas');
+  if (!canvas || !wfCtx) return;
+  const w = canvas.width, h = canvas.height;
+  wfCtx.clearRect(0, 0, w, h);
+
+  // grid
+  wfCtx.strokeStyle = 'rgba(26,48,72,0.8)';
+  wfCtx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 40) { wfCtx.beginPath(); wfCtx.moveTo(x,0); wfCtx.lineTo(x,h); wfCtx.stroke(); }
+  for (let y = 0; y < h; y += 20) { wfCtx.beginPath(); wfCtx.moveTo(0,y); wfCtx.lineTo(w,y); wfCtx.stroke(); }
+
+  // waveform
+  wfCtx.beginPath();
+  wfCtx.strokeStyle = '#00ff9d';
+  wfCtx.lineWidth = 1.5;
+  wfCtx.shadowColor = '#00ff9d';
+  wfCtx.shadowBlur = 6;
+  for (let x = 0; x < w; x++) {
+    const t = (x / w) * Math.PI * 8 + wfPhase;
+    const y = h/2 + Math.sin(t) * 20 + Math.sin(t*3.1) * 6 + Math.sin(t*7.3) * 3;
+    x === 0 ? wfCtx.moveTo(x, y) : wfCtx.lineTo(x, y);
+  }
+  wfCtx.stroke();
+  wfCtx.shadowBlur = 0;
+
+  wfPhase += 0.06;
+  wfAnimId = requestAnimationFrame(animateWaveform);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPECTRUM CANVAS
+// ═══════════════════════════════════════════════════════════
+function startSpectrumAnim() {
+  const canvas = document.getElementById('spectrum-canvas');
+  if (!canvas) return;
+  canvas.width = canvas.offsetWidth;
+  specCtx = canvas.getContext('2d');
+  animateSpectrum();
+  renderSpectrumMarkers();
+}
+
+function animateSpectrum() {
+  const canvas = document.getElementById('spectrum-canvas');
+  if (!canvas || !specCtx) return;
+  const w = canvas.width, h = canvas.height;
+  // drift spectrum data
+  specData = specData.map((v, i) => {
+    const drift = (Math.random() - 0.5) * 6;
+    let nv = v + drift;
+    // peaks at certain indices
+    const peaks = [20, 50, 80, 120, 160, 185];
+    if (peaks.includes(i)) nv = Math.max(nv, 60 + Math.random()*30);
+    return Math.max(5, Math.min(95, nv));
+  });
+
+  specCtx.clearRect(0, 0, w, h);
+  // bg grid
+  specCtx.strokeStyle = 'rgba(26,48,72,0.6)';
+  specCtx.lineWidth = 0.5;
+  for (let y = 0; y < h; y += 20) { specCtx.beginPath(); specCtx.moveTo(0,y); specCtx.lineTo(w,y); specCtx.stroke(); }
+
+  // spectrum fill
+  const bw = w / specData.length;
+  const grad = specCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(0,212,255,0.9)');
+  grad.addColorStop(0.4, 'rgba(0,255,157,0.6)');
+  grad.addColorStop(1, 'rgba(0,255,157,0.1)');
+
+  specCtx.beginPath();
+  specCtx.moveTo(0, h);
+  specData.forEach((v, i) => {
+    const x = i * bw;
+    const y = h - (v / 100) * h;
+    specCtx.lineTo(x, y);
+  });
+  specCtx.lineTo(w, h);
+  specCtx.closePath();
+  specCtx.fillStyle = grad;
+  specCtx.fill();
+
+  // top line
+  specCtx.beginPath();
+  specCtx.strokeStyle = 'rgba(0,212,255,0.8)';
+  specCtx.lineWidth = 1.5;
+  specCtx.shadowColor = 'rgba(0,212,255,0.6)';
+  specCtx.shadowBlur = 4;
+  specData.forEach((v, i) => {
+    const x = i * bw;
+    const y = h - (v / 100) * h;
+    i === 0 ? specCtx.moveTo(x, y) : specCtx.lineTo(x, y);
+  });
+  specCtx.stroke();
+  specCtx.shadowBlur = 0;
+
+  requestAnimationFrame(animateSpectrum);
+}
+
+function renderSpectrumMarkers() {
+  const markers = [
+    { freq: 420, label: '420 MHz', cls: 'unknown' },
+    { freq: 433, label: '433 MHz ISM', cls: 'friendly' },
+    { freq: 445, label: '445 MHz', cls: 'hostile' },
+    { freq: 468, label: '468 MHz', cls: 'friendly' },
+  ];
+  document.getElementById('spectrum-markers').innerHTML = markers.map(m => `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid ${m.cls==='hostile'?'var(--red)':m.cls==='friendly'?'var(--green)':'var(--amber)'};padding:8px 10px;">
+      <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-primary)">${m.label}</div>
+      <span class="threat-tag ${m.cls}" style="margin-top:4px;display:inline-block">${m.cls.toUpperCase()}</span>
+    </div>
+  `).join('');
+}
+
+function startSweep() { addLog('INFO','Spectrum sweep initiated'); }
+function startCapture() { addLog('INFO','Spectrum capture started'); }
+
+// ═══════════════════════════════════════════════════════════
+// FINGERPRINT VIEW
+// ═══════════════════════════════════════════════════════════
+function buildFingerprintView() {
+  const db = [
+    { id:'FP-001', freq:'433.92', hash: generateFingerprintHash(), match:'94%', status:'KNOWN', cls:'friendly' },
+    { id:'FP-002', freq:'868.50', hash: generateFingerprintHash(), match:'61%', status:'PARTIAL', cls:'unknown' },
+    { id:'FP-003', freq:'2450.0', hash: generateFingerprintHash(), match:'87%', status:'KNOWN', cls:'hostile' },
+  ];
+  const el = document.getElementById('fingerprint-view-body');
+  el.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div class="section-label">Known Emitter Database</div>
+      <div style="font-family:var(--font-mono);font-size:0.63rem;color:var(--text-dim)">
+        ${db.length} fingerprints loaded | Last sync: ${new Date().toLocaleTimeString()}
+      </div>
+    </div>
+    ${db.map(fp => `
+      <div class="fingerprint-card">
+        <div class="fp-title" style="display:flex;justify-content:space-between;">
+          <span>${fp.id} — ${fp.freq} MHz</span>
+          <span class="threat-tag ${fp.cls}">${fp.status}</span>
+        </div>
+        <div class="fp-hash">${fp.hash}</div>
+        <div class="fp-bars">
+          ${Array.from({length:16}, (_,i) => {
+            const h = Math.round(Math.random()*100);
+            return `<div class="fp-bar"><div class="fp-bar-fill" style="height:${h}%"></div></div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)">
+          <span>MATCH CONFIDENCE: <span style="color:${fp.cls==='hostile'?'var(--red)':fp.cls==='friendly'?'var(--green)':'var(--amber)'}">${fp.match}</span></span>
+          <span>EMITTER CLASS: ${fp.cls.toUpperCase()}</span>
+        </div>
+      </div>
+    `).join('')}
+    <div style="margin-top:12px;">
+      <button class="btn btn-secondary btn-sm" style="width:100%" onclick="addLog('INFO','Fingerprint database sync requested')">↻ SYNC FINGERPRINT DB</button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// THREAT INTEL VIEW
+// ═══════════════════════════════════════════════════════════
+function buildIntelView() {
+  const iocs = [
+    { id:'IOC-001', type:'FREQUENCY', value:'433.10 MHz', severity:'HIGH', source:'MITRE ATT&CK-RF', updated:'2h ago' },
+    { id:'IOC-002', type:'MODULATION', value:'Burst FSK', severity:'MEDIUM', source:'NSA Indicators', updated:'6h ago' },
+    { id:'IOC-003', type:'FINGERPRINT', value:'Hash: a3f92...', severity:'CRITICAL', source:'SIGINT DB', updated:'1h ago' },
+    { id:'IOC-004', type:'PROTOCOL', value:'Non-standard IFF', severity:'HIGH', source:'DIA Feed', updated:'3h ago' },
+    { id:'IOC-005', type:'FREQUENCY', value:'2450 MHz burst', severity:'LOW', source:'OSINT', updated:'12h ago' },
+  ];
+  document.getElementById('intel-view-body').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div class="section-label">Active Indicators of Compromise</div>
+    </div>
+    <div class="anomaly-list">
+      ${iocs.map(ioc => `
+        <div class="anomaly-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <div class="anomaly-dot ${ioc.severity==='CRITICAL'||ioc.severity==='HIGH'?'high':ioc.severity==='MEDIUM'?'medium':'low'}"></div>
+            <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-primary);flex:1">[${ioc.id}] ${ioc.type}: ${ioc.value}</span>
+            <span class="threat-tag ${ioc.severity==='CRITICAL'?'hostile':ioc.severity==='HIGH'?'hostile':ioc.severity==='MEDIUM'?'unknown':'friendly'}">${ioc.severity}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;width:100%;padding-left:16px;">
+            <span style="font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim)">SRC: ${ioc.source}</span>
+            <span style="font-family:var(--font-mono);font-size:0.58rem;color:var(--text-muted)">${ioc.updated}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="divider"></div>
+    <div class="section-label">Anomaly Detection Feed</div>
+    <div class="anomaly-list" id="anomaly-feed">
+      <div class="anomaly-item">
+        <div class="anomaly-dot high"></div>
+        <div class="anomaly-text">Spectral anomaly detected at 433.10 MHz — Z-score: 3.2σ</div>
+        <div class="anomaly-time">02:14</div>
+      </div>
+      <div class="anomaly-item">
+        <div class="anomaly-dot medium"></div>
+        <div class="anomaly-text">Frequency hopping pattern — 12 channels/sec</div>
+        <div class="anomaly-time">02:10</div>
+      </div>
+      <div class="anomaly-item">
+        <div class="anomaly-dot low"></div>
+        <div class="anomaly-text">Carrier drift detected — ±2.3 kHz from nominal</div>
+        <div class="anomaly-time">02:05</div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADAPTIVE LEARNING VIEW
+// ═══════════════════════════════════════════════════════════
+function buildLearningView() {
+  const models = [
+    { name:'Random Forest Classifier', accuracy: 94.2, samples: 12847, last:'2m ago' },
+    { name:'Isolation Forest (Anomaly)', accuracy: 88.7, samples: 8291, last:'5m ago' },
+    { name:'Signal Fingerprint CNN', accuracy: 91.5, samples: 4102, last:'12m ago' },
+    { name:'Threat Score Regressor', accuracy: 79.3, samples: 3891, last:'1h ago' },
+  ];
+  document.getElementById('learning-view-body').innerHTML = `
+    <div style="margin-bottom:12px;"><div class="section-label">Active ML Models</div></div>
+    ${models.map(m => `
+      <div class="learning-progress">
+        <div class="lp-header">
+          <span class="lp-title">${m.name}</span>
+          <span class="lp-pct">${m.accuracy}%</span>
+        </div>
+        <div class="lp-bar"><div class="lp-fill" style="width:${m.accuracy}%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted)">
+          <span>${m.samples.toLocaleString()} training samples</span>
+          <span>Updated: ${m.last}</span>
+        </div>
+      </div>
+    `).join('')}
+    <div class="divider"></div>
+    <div class="section-label">Training Queue</div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;margin-top:8px;">
+      <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);margin-bottom:8px;">
+        Next scheduled retrain: 06:00 UTC | New samples since last train: <span style="color:var(--cyan)">${analysisCount.friendly+analysisCount.hostile+analysisCount.unknown}</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="addLog('INFO','Manual retrain initiated')">RETRAIN NOW</button>
+        <button class="btn btn-sm" style="border:1px solid var(--text-dim);color:var(--text-dim)" onclick="addLog('INFO','Model export triggered')">EXPORT MODEL</button>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════
+function addLog(level, msg) {
+  const time = new Date().toLocaleTimeString();
+  auditLogs.unshift({ time, level, msg });
+  if (auditLogs.length > 200) auditLogs.pop();
+}
+
+function buildAuditLog() {
+  const el = document.getElementById('audit-log-list');
+  if (!el) return;
+  el.innerHTML = auditLogs.map(l => `
+    <div class="log-entry">
+      <span class="log-time">${l.time}</span>
+      <span class="log-level ${l.level}">${l.level}</span>
+      <span class="log-msg">${l.msg}</span>
+    </div>
+  `).join('') || '<div style="padding:20px;font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted)">No log entries yet.</div>';
+}
+
+function exportLog() {
+  const csv = 'Time,Level,Message\n' + auditLogs.map(l => `${l.time},${l.level},"${l.msg}"`).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `sigint_audit_${Date.now()}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// OFFLINE MODE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('offline-toggle').addEventListener('click', () => {
+  isOffline = !isOffline;
+  const btn = document.getElementById('offline-toggle');
+  btn.textContent = isOffline ? '● OFFLINE' : 'OFFLINE MODE';
+  btn.style.background = isOffline ? 'rgba(255,230,0,0.1)' : '';
+  btn.style.borderColor = isOffline ? 'var(--yellow)' : '';
+  btn.style.color       = isOffline ? 'var(--yellow)' : '';
+  addLog(isOffline ? 'WARN' : 'INFO', isOffline ? 'Offline mode activated — local inference only' : 'Online mode restored');
+});
+
+// ═══════════════════════════════════════════════════════════
+// ALERT FLASH
+// ═══════════════════════════════════════════════════════════
+function showAlert(msg) {
+  const el = document.createElement('div');
+  el.className = 'alert-flash';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  initWaveform();
+  // seed with boot logs
+  addLog('OK', 'SIGINT-7 Platform initialized');
+  addLog('INFO', 'Loaded 12,847 training samples');
+  addLog('INFO', 'Threat intelligence database synced');
+  addLog('OK', 'All subsystems nominal');
+  // demo signal
+  setTimeout(() => generateSignals(), 800);
+});
+
+window.addEventListener('resize', () => {
+  const c = document.getElementById('waveform-canvas');
+  if (c) c.width = c.offsetWidth;
+});
+</script>
+</body>
+</html>
